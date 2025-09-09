@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  artemis:
+    image: apache/activemq-artemis:2.32.0
+    container_name: activemq-artemis
+    ports:
+      - "8161:8161"   # Web Console
+      - "61616:61616" # JMS TCP port
+      - "5672:5672"   # AMQP port
+      - "1883:1883"   # MQTT port
+    environment:
+      ARTEMIS_USER: admin
+      ARTEMIS_PASSWORD: admin
+      ARTEMIS_MIN_MEMORY: 512M
+      ARTEMIS_MAX_MEMORY: 1024M
+    volumes:
+      - artemis_data:/var/lib/artemis/data
+      - artemis_etc:/var/lib/artemis/etc-override
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8161/console/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  artemis_data:
+    driver: local
+  artemis_etc:
+    driver: local
