@@ -99,6 +99,9 @@
                 <version>${javafx.maven.plugin.version}</version>
                 <configuration>
                     <mainClass>com.example.jmsguisender.JMSGuiSenderApplication</mainClass>
+                    <args>
+                        <arg>--enable-native-access=javafx.graphics</arg>
+                    </args>
                 </configuration>
             </plugin>
 

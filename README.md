@@ -29,7 +29,7 @@ This will create an executable JAR file: `target/jms-gui-sender-1.0.0.jar`
 
 ### Using the JAR directly:
 ```bash
-java --add-modules javafx.controls,javafx.fxml --add-opens javafx.graphics/com.sun.javafx.application=ALL-UNNAMED -jar target/jms-gui-sender-1.0.0.jar
+java --add-modules javafx.controls,javafx.fxml --add-opens javafx.graphics/com.sun.javafx.application=ALL-UNNAMED --enable-native-access=javafx.graphics -jar target/jms-gui-sender-1.0.0.jar
 ```
 
 ### Using the provided script:
