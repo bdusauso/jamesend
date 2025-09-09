@@ -57,11 +57,21 @@
             <version>3.1.0</version>
         </dependency>
 
-        <!-- ActiveMQ Artemis Client (popular JMS implementation) -->
+        <!-- Apache ActiveMQ Client (Jakarta JMS implementation) -->
         <dependency>
             <groupId>org.apache.activemq</groupId>
-            <artifactId>artemis-jakarta-client</artifactId>
-            <version>2.32.0</version>
+            <artifactId>activemq-client</artifactId>
+            <version>6.0.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Jackson for JSON handling -->
@@ -99,9 +109,9 @@
                 <version>${javafx.maven.plugin.version}</version>
                 <configuration>
                     <mainClass>com.example.jmsguisender.JMSGuiSenderApplication</mainClass>
-                    <args>
-                        <arg>--enable-native-access=javafx.graphics</arg>
-                    </args>
+                    <options>
+                        <option>--enable-native-access=javafx.graphics</option>
+                    </options>
                 </configuration>
             </plugin>
 

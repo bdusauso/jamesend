@@ -16,7 +16,7 @@
 package com.example.jmsguisender;
 
 import jakarta.jms.*;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQConnectionFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;

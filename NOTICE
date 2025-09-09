@@ -7,8 +7,9 @@ This product includes software developed by:
 - FasterXML (Jackson JSON processor)
 
 Third-party dependencies:
-- Apache ActiveMQ Artemis - Apache License 2.0
+- Apache ActiveMQ 6.x - Apache License 2.0
 - OpenJFX - GPL v2 with Classpath Exception
 - Jakarta JMS API - Eclipse Public License 2.0
 - Jackson - Apache License 2.0
 - SLF4J - MIT License
+- HawtBuf - Apache License 2.0

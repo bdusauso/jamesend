@@ -98,10 +98,10 @@ docker-compose down
 
 ## Supported JMS Brokers
 
-The application uses Apache ActiveMQ Artemis client but should work with any JMS-compliant broker:
+The application uses Apache ActiveMQ 6.x client but should work with any JMS-compliant broker:
 
+- Apache ActiveMQ Classic
 - Apache ActiveMQ Artemis
-- Apache ActiveMQ Classic  
 - IBM MQ
 - RabbitMQ (with JMS plugin)
 - And other JMS 3.1 compliant brokers
@@ -110,7 +110,7 @@ The application uses Apache ActiveMQ Artemis client but should work with any JMS
 
 - **JavaFX**: Modern desktop UI framework
 - **Jakarta JMS 3.1**: Standard JMS API
-- **ActiveMQ Artemis**: JMS client implementation
+- **Apache ActiveMQ 6.x**: JMS client implementation
 - **Jackson**: JSON processing
 - **Maven Shade Plugin**: Creates self-contained executable JAR
 
