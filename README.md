@@ -120,5 +120,17 @@ The application uses Apache ActiveMQ Artemis client but should work with any JMS
 src/main/java/com/example/jmsguisender/
 ├── JMSGuiSenderApplication.java  # Main application entry point
 ├── JMSGuiController.java         # GUI controller and event handling
-└── JMSSender.java               # JMS messaging logic
+├── JMSSender.java               # JMS messaging logic
+├── ServerConfiguration.java     # Configuration data model
+└── ConfigurationManager.java    # Configuration persistence
 ```
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+**Copyright 2025 Bruno Dusausoy <bruno.dusausoy@gmail.com>**
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

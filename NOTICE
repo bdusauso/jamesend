@@ -1,0 +1,14 @@
+JMS GUI Sender
+Copyright 2025 Bruno Dusausoy <bruno.dusausoy@gmail.com>
+
+This product includes software developed by:
+- The Apache Software Foundation (http://www.apache.org/)
+- Oracle Corporation and its affiliates (OpenJFX)
+- FasterXML (Jackson JSON processor)
+
+Third-party dependencies:
+- Apache ActiveMQ Artemis - Apache License 2.0
+- OpenJFX - GPL v2 with Classpath Exception
+- Jakarta JMS API - Eclipse Public License 2.0
+- Jackson - Apache License 2.0
+- SLF4J - MIT License

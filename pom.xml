@@ -11,6 +11,21 @@
 
     <name>JMS GUI Sender</name>
     <description>JavaFX desktop application for sending JMS messages</description>
+    
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+            <name>Bruno Dusausoy</name>
+            <email>bruno.dusausoy@gmail.com</email>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
