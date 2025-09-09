@@ -25,14 +25,14 @@ public class JMSSender {
     
     private final Map<String, Connection> connections = new ConcurrentHashMap<>();
     
-    public void sendMessage(String brokerURL, String username, String password, String destinationName, String messageText, boolean isTopic) throws JMSException {
+    public void sendMessage(String brokerURL, String username, String password, String destinationName, String messageText, boolean isTopic, ServerConfiguration sslConfig) throws JMSException {
         Connection connection = null;
         Session session = null;
         MessageProducer producer = null;
         
         try {
             // Get or create connection
-            connection = getConnection(brokerURL, username, password);
+            connection = getConnection(brokerURL, username, password, sslConfig);
             
             // Create session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -78,12 +78,27 @@ public class JMSSender {
         }
     }
     
-    private Connection getConnection(String brokerURL, String username, String password) throws JMSException {
-        String connectionKey = brokerURL + "|" + (username != null ? username : "");
+    private Connection getConnection(String brokerURL, String username, String password, ServerConfiguration sslConfig) throws JMSException {
+        String connectionKey = brokerURL + "|" + (username != null ? username : "") + "|ssl:" + (sslConfig != null && sslConfig.isUseSsl());
         
         return connections.computeIfAbsent(connectionKey, key -> {
             try {
-                jakarta.jms.ConnectionFactory factory = new ActiveMQConnectionFactory(brokerURL);
+                ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerURL);
+                
+                // Configure SSL if enabled
+                if (sslConfig != null && sslConfig.isUseSsl()) {
+                    try {
+                        javax.net.ssl.SSLContext sslContext = SSLContextHelper.createSSLContext(sslConfig);
+                        if (sslContext != null) {
+                            // For ActiveMQ Classic, we need to set trust store system properties
+                            // as it doesn't have direct SSL context configuration in the same way as Artemis
+                            configureSystemSSLProperties(sslConfig);
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to configure SSL: " + e.getMessage(), e);
+                    }
+                }
+                
                 Connection conn;
                 
                 if (username != null && !username.trim().isEmpty() && 
@@ -100,6 +115,46 @@ public class JMSSender {
                     (username != null && !username.trim().isEmpty() ? " with user " + username : ""), e);
             }
         });
+    }
+    
+    private void configureSystemSSLProperties(ServerConfiguration sslConfig) {
+        if (sslConfig.getTrustStorePath() != null && !sslConfig.getTrustStorePath().trim().isEmpty()) {
+            System.setProperty("javax.net.ssl.trustStore", sslConfig.getTrustStorePath());
+            if (sslConfig.getTrustStorePassword() != null && !sslConfig.getTrustStorePassword().trim().isEmpty()) {
+                System.setProperty("javax.net.ssl.trustStorePassword", sslConfig.getTrustStorePassword());
+            }
+            
+            // Detect truststore type
+            String trustStoreType = detectKeyStoreType(sslConfig.getTrustStorePath());
+            System.setProperty("javax.net.ssl.trustStoreType", trustStoreType);
+        }
+        
+        if (sslConfig.getKeyStorePath() != null && !sslConfig.getKeyStorePath().trim().isEmpty()) {
+            System.setProperty("javax.net.ssl.keyStore", sslConfig.getKeyStorePath());
+            if (sslConfig.getKeyStorePassword() != null && !sslConfig.getKeyStorePassword().trim().isEmpty()) {
+                System.setProperty("javax.net.ssl.keyStorePassword", sslConfig.getKeyStorePassword());
+            }
+            
+            // Detect keystore type
+            String keyStoreType = detectKeyStoreType(sslConfig.getKeyStorePath());
+            System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);
+        }
+        
+        if (sslConfig.isSkipCertificateValidation()) {
+            System.setProperty("com.sun.net.ssl.checkRevocation", "false");
+            System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true");
+        }
+    }
+    
+    private String detectKeyStoreType(String path) {
+        String lowerPath = path.toLowerCase();
+        if (lowerPath.endsWith(".p12") || lowerPath.endsWith(".pfx")) {
+            return "PKCS12";
+        } else if (lowerPath.endsWith(".jks")) {
+            return "JKS";
+        } else {
+            return "JKS"; // Default
+        }
     }
     
     public void close() {

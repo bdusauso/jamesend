@@ -5,6 +5,7 @@ A JavaFX desktop application for sending JMS messages to topics and queues.
 ## Features
 
 - **Server Connection**: Connect to JMS brokers using configurable server addresses
+- **SSL/TLS Support**: Secure connections with certificate management and validation options
 - **Authentication Support**: Store and use username/password credentials securely
 - **Configuration Persistence**: Automatically saves and loads connection settings
 - **Destination Support**: Send messages to both JMS topics and queues
@@ -45,20 +46,47 @@ mvn javafx:run
 ## Usage
 
 1. **Server Connection**: 
-   - Enter the JMS broker URL (e.g., `tcp://localhost:61616`)
+   - Enter the JMS broker URL (e.g., `tcp://localhost:61616` or `ssl://secure-broker:61617`)
    - Provide username/password if required (optional for anonymous brokers)
-2. **Destination**: Choose between Topic or Queue and enter the destination name
-3. **Payload**: Enter your JSON message payload in the text area
-4. **Configuration**: Click "Save Config" to store your settings for next session
-5. **Send**: Click "Send Message" to transmit the message
-6. **Monitor**: View logs in the bottom panel for status updates
+2. **SSL Configuration**:
+   - Enable SSL/TLS for secure connections
+   - Configure trust store and key store paths with passwords
+   - Option to skip certificate validation for development (insecure)
+3. **Destination**: Choose between Topic or Queue and enter the destination name
+4. **Payload**: Enter your JSON message payload in the text area
+5. **Configuration**: Click "Save Config" to store your settings for next session
+6. **Send**: Click "Send Message" to transmit the message
+7. **Monitor**: View logs in the bottom panel for status updates
 
 ## Configuration Storage
 
 The application automatically stores your settings in `~/.jms-gui-sender/config.json`:
-- Server URL and credentials (password is Base64 encoded)
+- Server URL and credentials (passwords are Base64 encoded)
+- SSL configuration including certificate paths and options
 - Last used destination and type (topic/queue)
 - Settings are loaded on startup and saved on exit
+
+## SSL Certificate Setup
+
+### Trust Store (Server Certificate Validation)
+- **JKS Format**: `keytool -import -alias server-cert -file server.crt -keystore truststore.jks`
+- **PKCS12 Format**: `keytool -import -alias server-cert -file server.crt -keystore truststore.p12 -storetype PKCS12`
+
+### Key Store (Client Certificate Authentication)
+- **JKS Format**: `keytool -genkeypair -alias client-key -keystore keystore.jks`
+- **PKCS12 Format**: `keytool -genkeypair -alias client-key -keystore keystore.p12 -storetype PKCS12`
+
+### Supported Formats
+- **PEM** (Base64 encoded) - `.pem`, `.crt`, `.cer`, `.cert` files
+- **JKS** (Java KeyStore) - `.jks` files  
+- **PKCS12** - `.p12`, `.pfx` files
+
+### PEM Certificate Usage
+PEM certificates are the simplest to use - just provide the certificate file path:
+- **No password required** for PEM certificate files
+- **Multiple certificates** supported in a single PEM file
+- **Chain certificates** automatically processed
+- **Example**: Download your server's certificate and use it directly
 
 ## Quick Start with Docker
 
@@ -122,7 +150,9 @@ src/main/java/com/example/jmsguisender/
 ├── JMSGuiController.java         # GUI controller and event handling
 ├── JMSSender.java               # JMS messaging logic
 ├── ServerConfiguration.java     # Configuration data model
-└── ConfigurationManager.java    # Configuration persistence
+├── ConfigurationManager.java    # Configuration persistence
+├── SSLContextHelper.java        # SSL certificate and context management
+└── PEMCertificateHelper.java    # PEM certificate parsing and validation
 ```
 
 ## License

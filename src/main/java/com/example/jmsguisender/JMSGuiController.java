@@ -21,7 +21,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
+import java.io.File;
 
 public class JMSGuiController {
 
@@ -31,6 +34,14 @@ public class JMSGuiController {
     private TextField destinationNameField;
     private RadioButton topicRadio;
     private RadioButton queueRadio;
+    private CheckBox useSslCheckBox;
+    private TextField trustStorePathField;
+    private PasswordField trustStorePasswordField;
+    private TextField keyStorePathField;
+    private PasswordField keyStorePasswordField;
+    private CheckBox skipCertValidationCheckBox;
+    private Button browseTrustStoreButton;
+    private Button browseKeyStoreButton;
     private TextArea payloadArea;
     private Button sendButton;
     private Button saveConfigButton;
@@ -96,6 +107,67 @@ public class JMSGuiController {
         VBox serverSection = new VBox(8);
         serverSection.getChildren().addAll(serverLabel, serverGrid);
 
+        // SSL Configuration Section
+        Label sslLabel = new Label("SSL Configuration:");
+        sslLabel.setStyle("-fx-font-weight: bold;");
+        
+        useSslCheckBox = new CheckBox("Use SSL/TLS");
+        useSslCheckBox.setOnAction(e -> toggleSslFields());
+        
+        trustStorePathField = new TextField();
+        trustStorePathField.setPromptText("Path to truststore or PEM certificate (optional)");
+        trustStorePathField.setDisable(true);
+        
+        browseTrustStoreButton = new Button("Browse...");
+        browseTrustStoreButton.setOnAction(e -> browseTrustStore());
+        browseTrustStoreButton.setDisable(true);
+        
+        trustStorePasswordField = new PasswordField();
+        trustStorePasswordField.setPromptText("Truststore password (not needed for PEM)");
+        trustStorePasswordField.setDisable(true);
+        
+        keyStorePathField = new TextField();
+        keyStorePathField.setPromptText("Path to keystore (optional)");
+        keyStorePathField.setDisable(true);
+        
+        browseKeyStoreButton = new Button("Browse...");
+        browseKeyStoreButton.setOnAction(e -> browseKeyStore());
+        browseKeyStoreButton.setDisable(true);
+        
+        keyStorePasswordField = new PasswordField();
+        keyStorePasswordField.setPromptText("Keystore password");
+        keyStorePasswordField.setDisable(true);
+        
+        skipCertValidationCheckBox = new CheckBox("Skip certificate validation (insecure)");
+        skipCertValidationCheckBox.setDisable(true);
+        
+        GridPane sslGrid = new GridPane();
+        sslGrid.setHgap(10);
+        sslGrid.setVgap(5);
+        sslGrid.add(useSslCheckBox, 0, 0, 2, 1);
+        sslGrid.add(new Label("Trust Store/PEM:"), 0, 1);
+        sslGrid.add(trustStorePathField, 1, 1);
+        sslGrid.add(browseTrustStoreButton, 2, 1);
+        sslGrid.add(new Label("Trust Store Password:"), 0, 2);
+        sslGrid.add(trustStorePasswordField, 1, 2);
+        sslGrid.add(new Label("Key Store:"), 0, 3);
+        sslGrid.add(keyStorePathField, 1, 3);
+        sslGrid.add(browseKeyStoreButton, 2, 3);
+        sslGrid.add(new Label("Key Store Password:"), 0, 4);
+        sslGrid.add(keyStorePasswordField, 1, 4);
+        sslGrid.add(skipCertValidationCheckBox, 0, 5, 2, 1);
+        
+        ColumnConstraints sslCol1 = new ColumnConstraints();
+        sslCol1.setMinWidth(120);
+        ColumnConstraints sslCol2 = new ColumnConstraints();
+        sslCol2.setHgrow(Priority.ALWAYS);
+        ColumnConstraints sslCol3 = new ColumnConstraints();
+        sslCol3.setMinWidth(80);
+        sslGrid.getColumnConstraints().addAll(sslCol1, sslCol2, sslCol3);
+        
+        VBox sslSection = new VBox(8);
+        sslSection.getChildren().addAll(sslLabel, sslGrid);
+
         // Destination Section
         Label destLabel = new Label("Destination:");
         destinationNameField = new TextField();
@@ -153,6 +225,8 @@ public class JMSGuiController {
         root.getChildren().addAll(
             serverSection,
             new Separator(),
+            sslSection,
+            new Separator(),
             destSection,
             new Separator(),
             payloadSection,
@@ -195,7 +269,7 @@ public class JMSGuiController {
             try {
                 String username = usernameField.getText().trim();
                 String password = passwordField.getText();
-                jmsSender.sendMessage(serverAddress, username, password, destinationName, payload, isTopic);
+                jmsSender.sendMessage(serverAddress, username, password, destinationName, payload, isTopic, currentConfig);
                 Platform.runLater(() -> {
                     logMessage("SUCCESS: Message sent successfully");
                     sendButton.setDisable(false);
@@ -234,6 +308,17 @@ public class JMSGuiController {
                 queueRadio.setSelected(true);
             }
             
+            // Load SSL configuration
+            useSslCheckBox.setSelected(currentConfig.isUseSsl());
+            trustStorePathField.setText(currentConfig.getTrustStorePath());
+            trustStorePasswordField.setText(currentConfig.getTrustStorePassword());
+            keyStorePathField.setText(currentConfig.getKeyStorePath());
+            keyStorePasswordField.setText(currentConfig.getKeyStorePassword());
+            skipCertValidationCheckBox.setSelected(currentConfig.isSkipCertificateValidation());
+            
+            // Enable/disable SSL fields based on checkbox
+            toggleSslFields();
+            
             if (configManager.configurationExists()) {
                 logMessage("Configuration loaded from: " + configManager.getConfigurationPath());
             } else {
@@ -254,11 +339,68 @@ public class JMSGuiController {
             currentConfig.setLastDestination(destinationNameField.getText().trim());
             currentConfig.setTopicSelected(topicRadio.isSelected());
             
+            // Save SSL configuration
+            currentConfig.setUseSsl(useSslCheckBox.isSelected());
+            currentConfig.setTrustStorePath(trustStorePathField.getText().trim());
+            currentConfig.setTrustStorePassword(trustStorePasswordField.getText());
+            currentConfig.setKeyStorePath(keyStorePathField.getText().trim());
+            currentConfig.setKeyStorePassword(keyStorePasswordField.getText());
+            currentConfig.setSkipCertificateValidation(skipCertValidationCheckBox.isSelected());
+            
             configManager.saveConfiguration(currentConfig);
             logMessage("Configuration saved successfully");
             
         } catch (Exception e) {
             logMessage("ERROR: Failed to save configuration: " + e.getMessage());
         }
+    }
+    
+    private void toggleSslFields() {
+        boolean enableSsl = useSslCheckBox.isSelected();
+        
+        trustStorePathField.setDisable(!enableSsl);
+        browseTrustStoreButton.setDisable(!enableSsl);
+        trustStorePasswordField.setDisable(!enableSsl);
+        keyStorePathField.setDisable(!enableSsl);
+        browseKeyStoreButton.setDisable(!enableSsl);
+        keyStorePasswordField.setDisable(!enableSsl);
+        skipCertValidationCheckBox.setDisable(!enableSsl);
+        
+        if (!enableSsl) {
+            // Clear SSL fields when disabled
+            trustStorePathField.clear();
+            trustStorePasswordField.clear();
+            keyStorePathField.clear();
+            keyStorePasswordField.clear();
+            skipCertValidationCheckBox.setSelected(false);
+        }
+    }
+    
+    private void browseTrustStore() {
+        File selected = browseForFile("Select Trust Store or Certificate", 
+            "Certificate Files", "*.jks", "*.p12", "*.keystore", "*.pem", "*.crt", "*.cer", "*.cert");
+        if (selected != null) {
+            trustStorePathField.setText(selected.getAbsolutePath());
+        }
+    }
+    
+    private void browseKeyStore() {
+        File selected = browseForFile("Select Key Store", "Key Store Files", "*.jks", "*.p12", "*.keystore");
+        if (selected != null) {
+            keyStorePathField.setText(selected.getAbsolutePath());
+        }
+    }
+    
+    private File browseForFile(String title, String description, String... extensions) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        
+        FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter(description, extensions);
+        fileChooser.getExtensionFilters().add(filter);
+        
+        // Set initial directory to user home
+        fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        
+        return fileChooser.showOpenDialog(sendButton.getScene().getWindow());
     }
 }

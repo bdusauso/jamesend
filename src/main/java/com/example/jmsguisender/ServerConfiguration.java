@@ -36,6 +36,24 @@ public class ServerConfiguration {
     @JsonProperty("isTopicSelected")
     private boolean isTopicSelected;
     
+    @JsonProperty("useSsl")
+    private boolean useSsl;
+    
+    @JsonProperty("trustStorePath")
+    private String trustStorePath;
+    
+    @JsonProperty("trustStorePassword")
+    private String trustStorePassword;
+    
+    @JsonProperty("keyStorePath")
+    private String keyStorePath;
+    
+    @JsonProperty("keyStorePassword")
+    private String keyStorePassword;
+    
+    @JsonProperty("skipCertificateValidation")
+    private boolean skipCertificateValidation;
+    
     public ServerConfiguration() {
         // Default values
         this.serverUrl = "tcp://localhost:61616";
@@ -43,6 +61,12 @@ public class ServerConfiguration {
         this.password = "";
         this.lastDestination = "";
         this.isTopicSelected = false;
+        this.useSsl = false;
+        this.trustStorePath = "";
+        this.trustStorePassword = "";
+        this.keyStorePath = "";
+        this.keyStorePassword = "";
+        this.skipCertificateValidation = false;
     }
     
     public ServerConfiguration(String serverUrl, String username, String password, 
@@ -52,6 +76,12 @@ public class ServerConfiguration {
         this.password = password;
         this.lastDestination = lastDestination;
         this.isTopicSelected = isTopicSelected;
+        this.useSsl = false;
+        this.trustStorePath = "";
+        this.trustStorePassword = "";
+        this.keyStorePath = "";
+        this.keyStorePassword = "";
+        this.skipCertificateValidation = false;
     }
     
     // Getters and Setters
@@ -95,9 +125,62 @@ public class ServerConfiguration {
         this.isTopicSelected = topicSelected;
     }
     
+    public boolean isUseSsl() {
+        return useSsl;
+    }
+    
+    public void setUseSsl(boolean useSsl) {
+        this.useSsl = useSsl;
+    }
+    
+    public String getTrustStorePath() {
+        return trustStorePath;
+    }
+    
+    public void setTrustStorePath(String trustStorePath) {
+        this.trustStorePath = trustStorePath;
+    }
+    
+    public String getTrustStorePassword() {
+        return trustStorePassword;
+    }
+    
+    public void setTrustStorePassword(String trustStorePassword) {
+        this.trustStorePassword = trustStorePassword;
+    }
+    
+    public String getKeyStorePath() {
+        return keyStorePath;
+    }
+    
+    public void setKeyStorePath(String keyStorePath) {
+        this.keyStorePath = keyStorePath;
+    }
+    
+    public String getKeyStorePassword() {
+        return keyStorePassword;
+    }
+    
+    public void setKeyStorePassword(String keyStorePassword) {
+        this.keyStorePassword = keyStorePassword;
+    }
+    
+    public boolean isSkipCertificateValidation() {
+        return skipCertificateValidation;
+    }
+    
+    public void setSkipCertificateValidation(boolean skipCertificateValidation) {
+        this.skipCertificateValidation = skipCertificateValidation;
+    }
+    
     public boolean hasCredentials() {
         return username != null && !username.trim().isEmpty() && 
                password != null && !password.trim().isEmpty();
+    }
+    
+    public boolean hasSslConfiguration() {
+        return useSsl && ((trustStorePath != null && !trustStorePath.trim().isEmpty()) ||
+                         skipCertificateValidation);
     }
     
     @Override
