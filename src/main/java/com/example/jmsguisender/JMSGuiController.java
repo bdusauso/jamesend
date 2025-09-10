@@ -16,15 +16,21 @@
 package com.example.jmsguisender;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JMSGuiController {
 
@@ -43,6 +49,10 @@ public class JMSGuiController {
     private Button browseTrustStoreButton;
     private Button browseKeyStoreButton;
     private TextArea payloadArea;
+    private TableView<HeaderEntry> headersTable;
+    private ObservableList<HeaderEntry> headersList;
+    private Button addHeaderButton;
+    private Button removeHeaderButton;
     private Button sendButton;
     private Button saveConfigButton;
     private TextArea logArea;
@@ -197,6 +207,77 @@ public class JMSGuiController {
         payloadSection.getChildren().addAll(payloadLabel, payloadArea);
         VBox.setVgrow(payloadArea, Priority.ALWAYS);
 
+        // Headers Section
+        Label headersLabel = new Label("Custom JMS Headers:");
+        headersLabel.setStyle("-fx-font-weight: bold;");
+        
+        // Initialize headers list and table
+        headersList = FXCollections.observableArrayList();
+        headersTable = new TableView<>(headersList);
+        headersTable.setEditable(true);
+        headersTable.setPrefHeight(150);
+        
+        // Create table columns
+        TableColumn<HeaderEntry, String> keyColumn = new TableColumn<>("Header Name");
+        keyColumn.setCellValueFactory(cellData -> cellData.getValue().keyProperty());
+        keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        keyColumn.setOnEditCommit(event -> event.getRowValue().setKey(event.getNewValue()));
+        keyColumn.setPrefWidth(150);
+        
+        TableColumn<HeaderEntry, String> valueColumn = new TableColumn<>("Header Value");
+        valueColumn.setCellValueFactory(cellData -> cellData.getValue().valueProperty());
+        valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        valueColumn.setOnEditCommit(event -> event.getRowValue().setValue(event.getNewValue()));
+        valueColumn.setPrefWidth(200);
+        
+        TableColumn<HeaderEntry, String> typeColumn = new TableColumn<>("Type");
+        typeColumn.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
+        typeColumn.setCellFactory(col -> {
+            ComboBox<String> combo = new ComboBox<>();
+            combo.getItems().addAll("String", "Integer", "Long", "Boolean", "Double", "Float");
+            combo.setValue("String");
+            
+            TableCell<HeaderEntry, String> cell = new TableCell<HeaderEntry, String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        combo.setValue(item);
+                        combo.setOnAction(e -> {
+                            if (getTableRow() != null && getTableRow().getItem() != null) {
+                                getTableRow().getItem().setType(combo.getValue());
+                            }
+                        });
+                        setGraphic(combo);
+                    }
+                }
+            };
+            return cell;
+        });
+        typeColumn.setPrefWidth(100);
+        
+        headersTable.getColumns().addAll(keyColumn, valueColumn, typeColumn);
+        
+        // Header buttons
+        addHeaderButton = new Button("Add Header");
+        addHeaderButton.setOnAction(e -> headersList.add(new HeaderEntry("", "", "String")));
+        
+        removeHeaderButton = new Button("Remove Selected");
+        removeHeaderButton.setOnAction(e -> {
+            HeaderEntry selected = headersTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                headersList.remove(selected);
+            }
+        });
+        
+        HBox headerButtonBox = new HBox(10);
+        headerButtonBox.getChildren().addAll(addHeaderButton, removeHeaderButton);
+        
+        VBox headersSection = new VBox(5);
+        headersSection.getChildren().addAll(headersLabel, headersTable, headerButtonBox);
+
         // Action Buttons
         sendButton = new Button("Send Message");
         sendButton.setPrefWidth(120);
@@ -230,6 +311,8 @@ public class JMSGuiController {
             destSection,
             new Separator(),
             payloadSection,
+            new Separator(),
+            headersSection,
             buttonBox,
             new Separator(),
             logSection
@@ -269,9 +352,28 @@ public class JMSGuiController {
             try {
                 String username = usernameField.getText().trim();
                 String password = passwordField.getText();
-                jmsSender.sendMessage(serverAddress, username, password, destinationName, payload, isTopic, currentConfig);
+                
+                // Collect custom headers
+                Map<String, Object> customHeaders = new HashMap<>();
+                for (HeaderEntry header : headersList) {
+                    String key = header.getKey();
+                    String value = header.getValue();
+                    String type = header.getType();
+                    
+                    if (key != null && !key.trim().isEmpty() && value != null && !value.trim().isEmpty()) {
+                        try {
+                            Object convertedValue = convertHeaderValue(value.trim(), type);
+                            customHeaders.put(key.trim(), convertedValue);
+                        } catch (Exception e) {
+                            Platform.runLater(() -> logMessage("WARNING: Failed to convert header '" + key + "' with value '" + value + "' to type " + type + ": " + e.getMessage()));
+                        }
+                    }
+                }
+                
+                jmsSender.sendMessage(serverAddress, username, password, destinationName, payload, isTopic, currentConfig, customHeaders);
                 Platform.runLater(() -> {
-                    logMessage("SUCCESS: Message sent successfully");
+                    String headerInfo = customHeaders.isEmpty() ? "" : " with " + customHeaders.size() + " custom headers";
+                    logMessage("SUCCESS: Message sent successfully" + headerInfo);
                     sendButton.setDisable(false);
                 });
             } catch (Exception e) {
@@ -402,5 +504,49 @@ public class JMSGuiController {
         fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
         
         return fileChooser.showOpenDialog(sendButton.getScene().getWindow());
+    }
+    
+    private Object convertHeaderValue(String value, String type) throws NumberFormatException {
+        switch (type) {
+            case "String":
+                return value;
+            case "Integer":
+                return Integer.valueOf(value);
+            case "Long":
+                return Long.valueOf(value);
+            case "Boolean":
+                return Boolean.valueOf(value);
+            case "Double":
+                return Double.valueOf(value);
+            case "Float":
+                return Float.valueOf(value);
+            default:
+                return value;
+        }
+    }
+    
+    // Inner class for header table entries
+    public static class HeaderEntry {
+        private final SimpleStringProperty key;
+        private final SimpleStringProperty value;
+        private final SimpleStringProperty type;
+        
+        public HeaderEntry(String key, String value, String type) {
+            this.key = new SimpleStringProperty(key);
+            this.value = new SimpleStringProperty(value);
+            this.type = new SimpleStringProperty(type);
+        }
+        
+        public String getKey() { return key.get(); }
+        public void setKey(String key) { this.key.set(key); }
+        public SimpleStringProperty keyProperty() { return key; }
+        
+        public String getValue() { return value.get(); }
+        public void setValue(String value) { this.value.set(value); }
+        public SimpleStringProperty valueProperty() { return value; }
+        
+        public String getType() { return type.get(); }
+        public void setType(String type) { this.type.set(type); }
+        public SimpleStringProperty typeProperty() { return type; }
     }
 }

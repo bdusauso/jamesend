@@ -25,7 +25,7 @@ public class JMSSender {
     
     private final Map<String, Connection> connections = new ConcurrentHashMap<>();
     
-    public void sendMessage(String brokerURL, String username, String password, String destinationName, String messageText, boolean isTopic, ServerConfiguration sslConfig) throws JMSException {
+    public void sendMessage(String brokerURL, String username, String password, String destinationName, String messageText, boolean isTopic, ServerConfiguration sslConfig, Map<String, Object> customHeaders) throws JMSException {
         Connection connection = null;
         Session session = null;
         MessageProducer producer = null;
@@ -52,10 +52,35 @@ public class JMSSender {
             // Create and send message
             TextMessage message = session.createTextMessage(messageText);
             
-            // Add some useful headers
+            // Add default headers
             message.setStringProperty("contentType", "application/json");
             message.setLongProperty("timestamp", System.currentTimeMillis());
             message.setStringProperty("sender", "JMS-GUI-Sender");
+            
+            // Add custom headers if provided
+            if (customHeaders != null && !customHeaders.isEmpty()) {
+                for (Map.Entry<String, Object> header : customHeaders.entrySet()) {
+                    String key = header.getKey();
+                    Object value = header.getValue();
+                    
+                    if (value instanceof String) {
+                        message.setStringProperty(key, (String) value);
+                    } else if (value instanceof Integer) {
+                        message.setIntProperty(key, (Integer) value);
+                    } else if (value instanceof Long) {
+                        message.setLongProperty(key, (Long) value);
+                    } else if (value instanceof Boolean) {
+                        message.setBooleanProperty(key, (Boolean) value);
+                    } else if (value instanceof Double) {
+                        message.setDoubleProperty(key, (Double) value);
+                    } else if (value instanceof Float) {
+                        message.setFloatProperty(key, (Float) value);
+                    } else if (value != null) {
+                        // Convert to string as fallback
+                        message.setStringProperty(key, value.toString());
+                    }
+                }
+            }
             
             producer.send(message);
             
