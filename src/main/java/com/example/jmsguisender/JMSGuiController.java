@@ -320,7 +320,7 @@ public class JMSGuiController {
 
         VBox.setVgrow(payloadSection, Priority.ALWAYS);
 
-        return new Scene(root, 800, 600);
+        return new Scene(root, 1024, 768);
     }
 
     private void sendMessage() {
